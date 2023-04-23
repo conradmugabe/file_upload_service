@@ -52,7 +52,10 @@ app.get('/', async (req, res) => {
 });
 
 app.post('/', async (req, res) => {
-  const { contentType, userId } = req.body;
+  const { contentType, userId } = req.body as {
+    contentType: string;
+    userId: string;
+  };
 
   const { signedUrl, key } = await storageService.getSignedUrl({
     bucketName,

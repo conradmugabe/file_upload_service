@@ -14,7 +14,9 @@ export default class AwsS3Service {
     contentType,
     userId,
   }: AwsS3Service.GetSignedUrl) => {
-    const key = `${userId}/${v4()}.${contentType}`;
+    const contentTypeList = contentType.split('/');
+    const fileType = contentTypeList[contentTypeList.length - 1];
+    const key = `${userId}/${v4()}.${fileType}`;
 
     const putObjectParams = {
       Bucket: bucketName,
