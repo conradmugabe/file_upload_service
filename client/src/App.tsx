@@ -1,13 +1,20 @@
+import { AxiosRequestConfig } from 'axios';
+
 import './App.css';
 import useFile from './hooks/useFile';
 import apiClientService from './services/api.service';
 import HttpService from './services/http.service';
+import { useState } from 'react';
 
 type UploadFileCallback = (file: File, key: string) => void;
 
 type UploadFileResponse = { signedUrl: string; key: string };
 
-const uploadFile = async (file: File, callbackFn?: UploadFileCallback) => {
+const uploadFile = async (
+  file: File,
+  config?: AxiosRequestConfig,
+  callbackFn?: UploadFileCallback
+) => {
   const httpService = new HttpService<UploadFileResponse>('/');
 
   const { signedUrl, key } = await httpService.create({
@@ -16,19 +23,32 @@ const uploadFile = async (file: File, callbackFn?: UploadFileCallback) => {
   });
 
   await apiClientService.put(signedUrl, file, {
-    headers: { 'Content-Type': file.type },
+    ...config,
+    headers: { ...config?.headers, 'Content-Type': file.type },
   });
-  
+
   if (callbackFn) callbackFn(file, key);
-  // parse the response to a callback function eg. to continue and create a post
-  // QUESTIONS
-  // 1. Does selecting a file automatically upload the file. This then questions deleting and all that.
-  // 2. onChange function should be able to take in some callback that takes File interface and returns void.
-  //    This can be used to do some kind of validation.
 };
 
 function App() {
-  const { file, onChange, onClick, ref } = useFile();
+  const [percentageUploaded, setPercentageUploaded] = useState(0);
+  const { file, onChange, onClick, setFile, ref } = useFile();
+
+  const fn = (file: File, key: string) => {
+    alert(JSON.stringify({ key, name: file.name }, null, 2));
+    setFile(undefined);
+    setPercentageUploaded(0);
+  };
+
+  const config: AxiosRequestConfig = {
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.total) {
+        const { loaded, total } = progressEvent;
+        const percentageUploaded = Math.round((loaded / total) * 100);
+        setPercentageUploaded(percentageUploaded);
+      }
+    },
+  };
 
   return (
     <>
@@ -39,11 +59,15 @@ function App() {
         <p>
           Selected File: <code>{file?.name}</code>
         </p>
-        {file && <button onClick={() => uploadFile(file)}>Upload File</button>}
+        {file && (
+          <button onClick={() => uploadFile(file, config, fn)}>
+            Upload File
+          </button>
+        )}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {file && percentageUploaded > 0 && (
+        <p className="read-the-docs">Uploaded {percentageUploaded}%</p>
+      )}
     </>
   );
 }

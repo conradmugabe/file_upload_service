@@ -18,5 +18,5 @@ export default function useFile() {
     }
   };
 
-  return { ref: inputRef, file, onChange, onClick };
+  return { ref: inputRef, file, onChange, onClick, setFile };
 }
