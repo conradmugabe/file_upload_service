@@ -1,13 +1,26 @@
 import './App.css';
 import useFile from './hooks/useFile';
+import apiClientService from './services/api.service';
+import HttpService from './services/http.service';
 
-type UploadFileCallback = (file: File) => void;
+type UploadFileCallback = (file: File, key: string) => void;
 
-const uploadFile = (file: File, callback?: UploadFileCallback) => {
-  // request for a presigned URL from the server.
-  // upload the file
-  // parse the response to a callback function eg. to continue and create a post
+type UploadFileResponse = { signedUrl: string; key: string };
+
+const uploadFile = async (file: File, callbackFn?: UploadFileCallback) => {
+  const httpService = new HttpService<UploadFileResponse>('/');
+
+  const { signedUrl, key } = await httpService.create({
+    contentType: file.type,
+    userId: 'conradmugabe',
+  });
+
+  await apiClientService.put(signedUrl, file, {
+    headers: { 'Content-Type': file.type },
+  });
   
+  if (callbackFn) callbackFn(file, key);
+  // parse the response to a callback function eg. to continue and create a post
   // QUESTIONS
   // 1. Does selecting a file automatically upload the file. This then questions deleting and all that.
   // 2. onChange function should be able to take in some callback that takes File interface and returns void.
@@ -26,6 +39,7 @@ function App() {
         <p>
           Selected File: <code>{file?.name}</code>
         </p>
+        {file && <button onClick={() => uploadFile(file)}>Upload File</button>}
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
