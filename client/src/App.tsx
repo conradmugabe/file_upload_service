@@ -1,38 +1,15 @@
-import { AxiosRequestConfig } from 'axios';
-
-import './App.css';
-import useFile from './hooks/useFile';
-import apiClientService from './services/api.service';
-import HttpService from './services/http.service';
 import { useState } from 'react';
 
-type UploadFileCallback = (file: File, key: string) => void;
+import { AxiosRequestConfig } from 'axios';
 
-type UploadFileResponse = { signedUrl: string; key: string };
-
-const uploadFile = async (
-  file: File,
-  config?: AxiosRequestConfig,
-  callbackFn?: UploadFileCallback
-) => {
-  const httpService = new HttpService<UploadFileResponse>('/');
-
-  const { signedUrl, key } = await httpService.create({
-    contentType: file.type,
-    userId: 'conradmugabe',
-  });
-
-  await apiClientService.put(signedUrl, file, {
-    ...config,
-    headers: { ...config?.headers, 'Content-Type': file.type },
-  });
-
-  if (callbackFn) callbackFn(file, key);
-};
+import useFile from './hooks/useFile';
+import { uploadFile, cancelFileUpload } from './services/file.service';
+import './App.css';
 
 function App() {
   const [percentageUploaded, setPercentageUploaded] = useState(0);
   const { file, onChange, onClick, setFile, ref } = useFile();
+  const uploadInProgress = file && percentageUploaded > 0;
 
   const fn = (file: File, key: string) => {
     alert(JSON.stringify({ key, name: file.name }, null, 2));
@@ -65,9 +42,14 @@ function App() {
           </button>
         )}
       </div>
-      {file && percentageUploaded > 0 && (
-        <p className="read-the-docs">Uploaded {percentageUploaded}%</p>
-      )}
+      <div>
+        {uploadInProgress && (
+          <p className="read-the-docs">Uploaded {percentageUploaded}%</p>
+        )}
+        {uploadInProgress && (
+          <button onClick={() => cancelFileUpload()}>Cancel</button>
+        )}
+      </div>
     </>
   );
 }
